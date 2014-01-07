@@ -4,12 +4,12 @@
  * Module dependencies.
  */
 var express = require('express'),
-    mongoStore = require('connect-mongo')(express),
+    RedisStore = require('connect-redis')(express),
     flash = require('connect-flash'),
     helpers = require('view-helpers'),
     config = require('./config');
 
-module.exports = function(app, passport, db) {
+module.exports = function(app, passport) {
     app.set('showStackError', true);
 
     //Prettify HTML
@@ -22,6 +22,10 @@ module.exports = function(app, passport, db) {
         },
         level: 9
     }));
+
+    //Setting the fav icon and static folder
+    app.use(express.favicon());
+    app.use(express.static(config.root + '/public'));
 
     //Don't use logger for test env
     if (process.env.NODE_ENV !== 'test') {
@@ -39,18 +43,16 @@ module.exports = function(app, passport, db) {
         //cookieParser should be above session
         app.use(express.cookieParser());
 
-        // request body parsing middleware should be above methodOverride
+        //bodyParser should be above methodOverride
+        app.use(express.bodyParser());
         app.use(express.urlencoded());
         app.use(express.json());
         app.use(express.methodOverride());
 
-        //express/mongo session storage
+        //express/redis session storage
         app.use(express.session({
             secret: 'MEAN',
-            store: new mongoStore({
-                db: db.connection.db,
-                collection: 'sessions'
-            })
+            store: new RedisStore({})
         }));
 
         //connect flash for flash messages
